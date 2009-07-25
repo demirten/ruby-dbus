@@ -19,7 +19,7 @@ spec = Gem::Specification.new do |s|
     "lib/dbus", "lib/dbus/message.rb", "lib/dbus/auth.rb",
     "lib/dbus/marshall.rb", "lib/dbus/export.rb", "lib/dbus/type.rb",
     "lib/dbus/introspect.rb", "lib/dbus/matchrule.rb",
-    "lib/dbus/bus.rb", "lib/dbus.rb"]
+    "lib/dbus/bus.rb", "lib/dbus/connection.rb", "lib/dbus.rb"]
     s.require_path = "lib"
     s.autorequire = "dbus"
     s.has_rdoc = true
