@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s|
     s.name = "ruby-dbus"
-    s.version = "0.2.1"
+    s.version = "0.2.2"
     s.author = "Ruby DBUS Team"
     s.email = "http://trac.luon.net"
     s.homepage = "http://trac.luon.net/data/ruby-dbus/"
