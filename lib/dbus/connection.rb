@@ -26,14 +26,19 @@
       @method_call_msgs = Hash.new
       @signal_matchrules = Array.new
       @proxy = nil
-      # FIXME: can be TCP or any stream
-      @socket = Socket.new(Socket::Constants::PF_UNIX,
-                           Socket::Constants::SOCK_STREAM, 0)
+      # FIXME: can be TCP or any stream, let's do it.
+      @socket = Socket.new(Socket::Constants::PF_UNIX,Socket::Constants::SOCK_STREAM, 0)
       @object_root = Node.new("/")
     end
 
     # Connect to the bus and initialize the connection.
     def connect
+      connect_to_unix_abstract
+    end
+
+
+    # Connect to the bus and initialize the connection.
+    def connect_to_unix_abstract
       parse_session_string
       if @transport == "unix" and @type == "abstract"
         if HOST_END == LIL_END
