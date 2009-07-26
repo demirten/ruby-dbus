@@ -16,7 +16,6 @@ require 'dbus/marshall'
 require 'dbus/message'
 require 'dbus/matchrule'
 require 'dbus/auth'
-
 require 'socket'
 require 'thread'
 
@@ -26,6 +25,9 @@ require 'thread'
 module DBus
   # Default socket name for the system bus.
   SystemSocketName = "unix:path=/var/run/dbus/system_bus_socket"
+
+  # Socket name for the session bus.
+  SessionSocketName = ENV["DBUS_SESSION_BUS_ADDRESS"]
 
   # Byte signifying big endianness.
   BIG_END = ?B
@@ -80,3 +82,5 @@ module DBus
   class InvalidIntrospectionData < Exception
   end
 end # module DBus
+#just for my info
+puts "pangdudus ruby-dbus fork."

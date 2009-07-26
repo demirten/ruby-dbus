@@ -38,6 +38,7 @@ Ruby D-Bus currently supports the following features:
  * Rubyish D-Bus object and interface syntax support that automatically
    allows for introspection.
  * Emitting signals on exported objects.
+ * Connection to a local or remote bus over TCP/IP
 
 == Usage
 

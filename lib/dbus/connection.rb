@@ -1,3 +1,10 @@
+ require 'dbus/bus'
+ require 'dbus/auth'
+
+# = D-Bus main module
+#
+# Module containing all the D-Bus modules and classes.
+module DBus 
   # D-Bus main connection class
   #
   # Main class that maintains a connection to a bus and can handle incoming
@@ -35,7 +42,6 @@
     def connect
       connect_to_unix_abstract
     end
-
 
     # Connect to the bus and initialize the connection.
     def connect_to_unix_abstract
@@ -459,4 +465,4 @@
       #writel("BEGIN")
     end
   end # class Connection
-
+end # module DBus
