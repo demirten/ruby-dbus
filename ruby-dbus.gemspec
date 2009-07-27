@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.files = ["COPYING", "README.rdoc", "lib/dbus", "lib/dbus/message.rb", 
     "lib/dbus/auth.rb", "lib/dbus/marshall.rb", "lib/dbus/export.rb", 
     "lib/dbus/type.rb", "lib/dbus/introspect.rb", "lib/dbus/matchrule.rb",
-    "lib/dbus/bus.rb", "lib/dbus/connection.rb", "lib/dbus.rb",
+    "lib/dbus/bus.rb", "lib/dbus.rb",
     "config/remote.session.dbus.conf","config/start_dbus_session.sh",
     "test/simple_socket_test.rb"]
   s.has_rdoc = true
