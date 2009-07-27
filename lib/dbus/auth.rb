@@ -29,7 +29,7 @@ module DBus
       # each character and determin hex value "1" => 0x31, "0" => 0x30. You
       # obtain for "1000" => 31303030 This is what the server is expecting.
       # Why? I dunno. How did I come to that conclusion? by looking at rbus
-      # code. I have no idea how he found that out.
+      # code. I have no idea how he found that out. 
       return Process.uid.to_s.split(//).collect { |a| "%x" % a[0] }.join
     end
   end
@@ -61,10 +61,12 @@ module DBus
       c_challenge = Array.new(s_challenge.length/2).map{|obj|obj=rand(255).to_s}.join
       # Search cookie file for id
       path = File.join(ENV['HOME'], '.dbus-keyrings', context)
+      dlog "path: #{path.inspect}"
       File.foreach(path) do |line|
         if line.index(id) == 0
           # Right line of file, read cookie
           cookie = line.split(' ')[2].chomp
+          dlog "cookie: #{cookie.inspect}"
           # Concatenate and encrypt
           to_encrypt = [s_challenge, c_challenge, cookie].join(':')
           sha = Digest::SHA1.hexdigest(to_encrypt)
@@ -75,7 +77,7 @@ module DBus
           return response
         end
       end
-      raise AuthException, 'Unable to locate cookie'
+      elog "Unable to locate cookie"
     end  
     
     # encode plain to hex
@@ -126,9 +128,16 @@ module DBus
 
     # Try authentication using the next authenticator.
     def next_authenticator
-      raise AuthenticationFailed if @auth_list.size == 0
-      @authenticator = @auth_list.shift.new
-      send("AUTH", @authenticator.name, @authenticator.authenticate)
+      begin
+        raise AuthException if @auth_list.size == 0
+        @authenticator = @auth_list.shift.new
+        auth_msg = ["AUTH", @authenticator.name, @authenticator.authenticate]
+        dlog "auth_msg: #{auth_msg.inspect}"
+        send(auth_msg)
+      rescue AuthException
+        @socket.close
+        raise
+      end
     end
 
 
@@ -142,32 +151,36 @@ module DBus
         break if buf.nil?
         left -= buf.size
         data += buf
-        break if data.include? crlf
+        break if data.include? crlf #crlf means line finished, the TCP socket keeps on listening, so we break 
       end
       readline = data.chomp.split(" ")
+      dlog "readline: #{readline.inspect}"
       return readline
-      #return @socket.readline.chomp.split(" ")
     end
 
     # Try to reach the next state based on the current state.
     def next_state
       msg = next_msg
       if @state == :Starting
+        dlog ":Starting msg: #{msg[0].inspect}"
         case msg[0]
         when "OK"
           @state = :WaitingForOk    
         when "CONTINUE"
           @state = :WaitingForData
-        when "REJECTED" #needed by tcp, unix-path/abstract don't get here
+        when "REJECTED" #needed by tcp, unix-path/abstract doesn't get here
           @state = :WaitingForData
         end
       end
+      dlog "state: #{@state}"
       case @state
       when :WaitingForData
+        dlog ":WaitingForData msg: #{msg[0].inspect}"
         case msg[0]
         when "DATA"
           chall = msg[1]
           resp, chall = @authenticator.data(chall)
+          dlog ":WaitingForData/DATA resp: #{resp.inspect}"
           case resp
           when :AuthContinue
             send("DATA", chall)
@@ -193,6 +206,7 @@ module DBus
           @state = :WaitingForData
         end
       when :WaitingForOk
+        dlog ":WaitingForOk msg: #{msg[0].inspect}"
         case msg[0]
         when "OK"
           send("BEGIN")
@@ -208,6 +222,7 @@ module DBus
           @state = :WaitingForOk
         end
       when :WaitingForReject
+        dlog ":WaitingForReject msg: #{msg[0].inspect}"
         case msg[0]
         when "REJECT"
           next_authenticator

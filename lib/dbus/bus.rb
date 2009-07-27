@@ -7,7 +7,6 @@
 # modify it under the terms of the GNU Lesser General Public
 # License, version 2.1 as published by the Free Software Foundation.
 # See the file "COPYING" for the exact licensing terms.
-
 require 'socket'
 require 'thread'
 require 'singleton'
@@ -78,7 +77,7 @@ module DBus
         n = n[elem]
       end
       if n.nil?
-        puts "Warning, unknown object #{path}" if $DEBUG
+        wlog "Unknown object #{path.inspect}"
       end
       n
     end
@@ -124,10 +123,9 @@ module DBus
 
     # Return an XML string representation of the node.
     def to_xml
-      xml = '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
-"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
-<node>
-'
+      xml = '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+      <node>'
+
       self.each_pair do |k, v|
         xml += "<node name=\"#{k}\" />"
       end
@@ -140,7 +138,7 @@ module DBus
         end
       end
       xml += '</node>'
-      xml
+      return xml
     end
 
     # Return inspect information of the node.
@@ -176,11 +174,7 @@ module DBus
       # http://dbus.freedesktop.org/doc/dbus-specification.html#addresses
     # and is something like:
     # "transport1:key1=value1,key2=value2;transport2:key1=value1,key2=value2"
-    # e.g. "unix:path=/tmp/dbus-test"
-    #
-    # Current implementation of ruby-dbus supports only a single server
-    # address and only "unix:path=...,guid=..." and
-    # "unix:abstract=...,guid=..." forms
+    # e.g. "unix:path=/tmp/dbus-test" or "tcp:host=localhost,port=2687"
     def initialize(path)
       @path = path
       @unique_name = nil
@@ -194,8 +188,8 @@ module DBus
 
     # Connect to the bus and initialize the connection.
     def connect
-      connect_to_tcp if @path.include? "tcp:" #testing
-      connect_to_unix_abstract if @path.include? "unix:" #supposed stable
+      connect_to_tcp if @path.include? "tcp:" #connect to tcp socket
+      connect_to_unix if @path.include? "unix:" #connect to unix socket
     end
 
     # Connect to a bus over tcp and initialize the connection.
@@ -209,18 +203,23 @@ module DBus
           port = para.sub("port=","").to_i if para.include? "port="
           family = para.sub("family=","") if para.include? "family="
         end
-        #puts "host,port,family : #{host},#{port},#{family}"      
-        #initialize the tcp socket
-        @socket = TCPSocket.new(host,port)
-        init_connection
+        dlog "host,port,family : #{host},#{port},#{family}"      
+        begin
+          #initialize the tcp socket
+          @socket = TCPSocket.new(host,port)
+          init_connection
+        rescue
+          elog "Could not establish connection to: #{@path}, will now exit."
+          exit(0) #a little harsh
+        end
       else
         #Danger, Will Robinson: the specified "path" is not usable
-        puts "ERROR:dbus/bus.rb/Connection.connect_to_tcp: supplied path: #{@path}, unasable! sry" if $DEBUG
+        elog "supplied path: #{@path}, unusable! sorry."
       end
     end
 
     # Connect to an abstract unix bus and initialize the connection.
-    def connect_to_unix_abstract
+    def connect_to_unix
       @socket = Socket.new(Socket::Constants::PF_UNIX,Socket::Constants::SOCK_STREAM, 0)
       parse_session_string
       if @transport == "unix" and @type == "abstract"
@@ -260,7 +259,7 @@ module DBus
 
     # Send the buffer _buf_ to the bus using Connection#writel.
     def send(buf)
-      @socket.write(buf)
+      @socket.write(buf) unless @socket.nil?
     end
 
     # Tell a bus to register itself on the glib main loop
@@ -447,7 +446,7 @@ module DBus
     # Fill (append) the buffer from data that might be available on the
     # socket.
     def update_buffer
-      @buffer += @socket.read_nonblock(MSG_BUF_SIZE)
+      @buffer += @socket.read_nonblock(MSG_BUF_SIZE) unless @socket.nil?
     end
 
     # Get one message from the bus and remove it from the buffer.
@@ -488,6 +487,10 @@ module DBus
 
     # Wait for a message to arrive. Return it once it is available.
     def wait_for_message
+      if @socket.nil?
+        elog "Can't wait for messages, @socket is nil."
+        return
+      end
       ret = pop_message
       while ret == nil
         r, d, d = IO.select([@socket])
@@ -502,11 +505,15 @@ module DBus
     # Send a message _m_ on to the bus. This is done synchronously, thus
     # the call will block until a reply message arrives.
     def send_sync(m, &retc) # :yields: reply/return message
+      return if m.nil? #check if somethings wrong
       send(m.marshall)
       @method_call_msgs[m.serial] = m
       @method_call_replies[m.serial] = retc
 
       retm = wait_for_message
+      
+      return if retm.nil? #check if somethings wrong
+      
       process(retm)
       until [DBus::Message::ERROR,
           DBus::Message::METHOD_RETURN].include?(retm.message_type) and
@@ -521,6 +528,7 @@ module DBus
     def on_return(m, &retc)
       # Have a better exception here
       if m.message_type != Message::METHOD_CALL
+        elog "Funky exception, occured."
         raise "on_return should only get method_calls"
       end
       @method_call_msgs[m.serial] = m
@@ -536,17 +544,14 @@ module DBus
     end
 
     # Process a message _m_ based on its type.
-    # method call:: FIXME...
-    # method call return value:: FIXME...
-    # signal:: FIXME...
-    # error:: FIXME...
     def process(m)
+      return if m.nil? #check if somethings wrong
       case m.message_type
       when Message::ERROR, Message::METHOD_RETURN
         raise InvalidPacketException if m.reply_serial == nil
         mcs = @method_call_replies[m.reply_serial]
         if not mcs
-          puts "no return code for #{mcs.inspect} (#{m.inspect})" if $DEBUG
+          dlog "no return code for mcs: #{mcs.inspect} m: #{m.inspect}"
         else
           if m.message_type == Message::ERROR
             mcs.call(Error.new(m))
@@ -558,7 +563,7 @@ module DBus
         end
       when DBus::Message::METHOD_CALL
         if m.path == "/org/freedesktop/DBus"
-          puts "Got method call on /org/freedesktop/DBus" if $DEBUG
+          dlog "Got method call on /org/freedesktop/DBus"
         end
         # handle introspectable as an exception:
         if m.interface == "org.freedesktop.DBus.Introspectable" and
@@ -586,7 +591,7 @@ module DBus
           end
         end
       else
-        puts "Unknown message type: #{m.message_type}" if $DEBUG
+        dlog "Unknown message type: #{m.message_type}"
       end
     end
 
@@ -626,7 +631,7 @@ module DBus
       m.member = "Hello"
       send_sync(m) do |rmsg|
         @unique_name = rmsg.destination
-        puts "Got hello reply. Our unique_name is #{@unique_name}" if $DEBUG
+        dlog "Got hello reply. Our unique_name is #{@unique_name}, i feel special."
       end
     end
 

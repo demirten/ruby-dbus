@@ -1,4 +1,4 @@
-# dbus/introspection.rb - module containing a low-level D-Bus introspection implementation
+p# dbus/introspection.rb - module containing a low-level D-Bus introspection implementation
 #
 # This file is part of the ruby-dbus project
 # Copyright (C) 2007 Arnaud Cornet and Paul van Tilburg
@@ -237,7 +237,7 @@ module DBus
       end
       d = Time.now - t
       if d > 2
-        puts "Some XML took more that two secs to parse. Optimize me!" if $DEBUG
+        wlog "Some XML took more that two secs to parse. Optimize me! (Hpricot?)"
       end
       [ret, subnodes]
     end

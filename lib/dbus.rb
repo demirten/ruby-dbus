@@ -7,11 +7,15 @@
 # modify it under the terms of the GNU Lesser General Public
 # License, version 2.1 as published by the Free Software Foundation.
 # See the file "COPYING" for the exact licensing terms.
+require 'rubygems'
+require 'rofl' #http://github.com/pangdudu/rofl/tree/master makes the debug/tracing easy
+#comes from the Rofl logger/tracer module
+@logger.level = Logger::DEBUG
 
 require 'dbus/type'
 require 'dbus/introspect'
 require 'dbus/export'
-require 'dbus/bus.rb'
+require 'dbus/bus'
 require 'dbus/marshall'
 require 'dbus/message'
 require 'dbus/matchrule'
@@ -26,7 +30,7 @@ module DBus
   # Default socket name for the system bus.
   SystemSocketName = "unix:path=/var/run/dbus/system_bus_socket"
 
-  # Socket name for the session bus.
+  # Socket name for the session bus, not pretty.
   SessionSocketName = ENV["DBUS_SESSION_BUS_ADDRESS"]
 
   # Byte signifying big endianness.
@@ -82,5 +86,3 @@ module DBus
   class InvalidIntrospectionData < Exception
   end
 end # module DBus
-#just for my info
-puts "pangdudus ruby-dbus fork."
