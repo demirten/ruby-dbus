@@ -6,8 +6,9 @@ D-Bus system can be used in the Ruby programming language.
 
 This is my personal dev-fork of mvidners upstream.
 
-Things will move on quick here if I need stuff. If you'd like to contrib/maintain
-to this fork, let me know.
+If you'd like to contrib to this fork, let me know.
+
+
 
 Most of my work here is actually for another project: http://github.com/pangdudu/robots/tree/master
 
