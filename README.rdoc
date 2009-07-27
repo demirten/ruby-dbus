@@ -87,7 +87,7 @@ is the same on both machines, in order for the 'CookieSHA1' auth to work.
 Not cool. I can think of hacks with nfs,smb or fuse:sshfs making it less
 painful to use. 
 
-The file content also get's updated every 5 minutes (when a client fails to auth etc.)
+The file content also get's updated every 5 minutes (when a client fails to auth etc.). 
 Making copy and paste from one shell to another very frolic.
 
 To sum it up: 
