@@ -470,6 +470,8 @@ module DBus
       if @default_iface and has_iface?(@default_iface)
         @interfaces[@default_iface].method(name).call(*args)
       else
+        dlog "interfaces: #{@interfaces.keys.inspect}"
+        dlog "default_iface: #{@default_iface}"
         raise NoMethodError
       end
     end

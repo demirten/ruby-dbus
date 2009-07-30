@@ -91,10 +91,32 @@ painful to use.
 The file content also get's updated every 5 minutes (when a client fails to auth etc.). 
 Making copy and paste from one shell to another very frolic.
 
-To sum it up: 
+=== Hackish solution from pangdudu/robots/lib/robots_agent.rb
 
-Today it's acceptable to use it like this, but until next week we'll need an easy 
-auth mechanism that works on the wire. 
+  #because dbus remote auth still betrays us, we need to hack it
+  def get_remote_cookie
+    if @config[:robots_socket_name].include? "tcp:"
+      af, port, daemon_name, daemon_addr = (Socket::getaddrinfo(@config[:daemonhost],@config[:daemonhost].to_i)).first
+      ilog "Trying to get/hack remote cookie from: #{daemon_name}."
+      begin
+        cookiepath = "#{ENV['HOME']}/.dbus-keyrings/org_freedesktop_general"
+        #oki, the scp magic only works, if you use sshkeys
+        `scp #{daemon_addr}:.dbus-keyrings/org_freedesktop_general #{cookiepath}`
+        if File.exist? cookiepath
+          cookie = File.open(cookiepath) 
+          dlog "Got cookie: #{cookie.gets}"
+        end
+      rescue
+        elog "Oops, something is wrong."
+      end
+    else
+      dlog "Nothing to hack, boring."
+    end
+  end
+
+in principle, this is ok. we can now do what we want and it is save to exchange cookies over 
+a ssh session. However I'm still not feeling comfortable doing this. I guess everything else 
+would mean touching the reference C dbus-daemon implementation. 
 
 
 more infos:
