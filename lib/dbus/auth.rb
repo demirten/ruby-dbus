@@ -6,7 +6,10 @@
 # License, version 2.1 as published by the Free Software Foundation.
 # See the file "COPYING" for the exact licensing terms.
 
+$debug = false #it's all over the state machine
+
 module DBus
+ 
   # Exception raised when authentication fails somehow.
   class AuthenticationFailed < Exception
   end
@@ -39,10 +42,12 @@ module DBus
   # Class for 'CookieSHA1' type authentication.
   # Implements the AUTH DBUS_COOKIE_SHA1 mechanism.
   class DBusCookieSHA1 < Authenticator
-    
+        
     #the autenticate method (called in stage one of authentification)    
     def authenticate
       require 'etc'
+      #number of retries we have for auth
+      @retries = 1
       return "#{hex_encode(Etc.getlogin)}" #server expects it to be binary
     end
 
@@ -61,12 +66,12 @@ module DBus
       c_challenge = Array.new(s_challenge.length/2).map{|obj|obj=rand(255).to_s}.join
       # Search cookie file for id
       path = File.join(ENV['HOME'], '.dbus-keyrings', context)
-      dlog "path: #{path.inspect}"
+      dlog "path: #{path.inspect}" #if $debug
       File.foreach(path) do |line|
         if line.index(id) == 0
           # Right line of file, read cookie
           cookie = line.split(' ')[2].chomp
-          dlog "cookie: #{cookie.inspect}"
+          dlog "cookie: #{cookie.inspect}" if $debug
           # Concatenate and encrypt
           to_encrypt = [s_challenge, c_challenge, cookie].join(':')
           sha = Digest::SHA1.hexdigest(to_encrypt)
@@ -77,7 +82,12 @@ module DBus
           return response
         end
       end
-      elog "Unable to locate cookie"
+      #a little rescue magic
+      elog "Could not auth, will now exit." unless @retries <= 0
+      elog "Unable to locate cookie, retry in 1 second."
+      @retries -= 1
+      sleep 1
+      data(hexdata)
     end  
     
     # encode plain to hex
@@ -132,7 +142,7 @@ module DBus
         raise AuthException if @auth_list.size == 0
         @authenticator = @auth_list.shift.new
         auth_msg = ["AUTH", @authenticator.name, @authenticator.authenticate]
-        dlog "auth_msg: #{auth_msg.inspect}"
+        dlog "auth_msg: #{auth_msg.inspect}" if $debug
         send(auth_msg)
       rescue AuthException
         @socket.close
@@ -154,7 +164,7 @@ module DBus
         break if data.include? crlf #crlf means line finished, the TCP socket keeps on listening, so we break 
       end
       readline = data.chomp.split(" ")
-      dlog "readline: #{readline.inspect}"
+      dlog "readline: #{readline.inspect}" if $debug
       return readline
     end
 
@@ -162,7 +172,7 @@ module DBus
     def next_state
       msg = next_msg
       if @state == :Starting
-        dlog ":Starting msg: #{msg[0].inspect}"
+        dlog ":Starting msg: #{msg[0].inspect}" if $debug
         case msg[0]
         when "OK"
           @state = :WaitingForOk    
@@ -172,15 +182,15 @@ module DBus
           @state = :WaitingForData
         end
       end
-      dlog "state: #{@state}"
+      dlog "state: #{@state}" if $debug
       case @state
       when :WaitingForData
-        dlog ":WaitingForData msg: #{msg[0].inspect}"
+        dlog ":WaitingForData msg: #{msg[0].inspect}" if $debug
         case msg[0]
         when "DATA"
           chall = msg[1]
           resp, chall = @authenticator.data(chall)
-          dlog ":WaitingForData/DATA resp: #{resp.inspect}"
+          dlog ":WaitingForData/DATA resp: #{resp.inspect}" if $debug
           case resp
           when :AuthContinue
             send("DATA", chall)
@@ -206,7 +216,7 @@ module DBus
           @state = :WaitingForData
         end
       when :WaitingForOk
-        dlog ":WaitingForOk msg: #{msg[0].inspect}"
+        dlog ":WaitingForOk msg: #{msg[0].inspect}" if $debug
         case msg[0]
         when "OK"
           send("BEGIN")
@@ -222,7 +232,7 @@ module DBus
           @state = :WaitingForOk
         end
       when :WaitingForReject
-        dlog ":WaitingForReject msg: #{msg[0].inspect}"
+        dlog ":WaitingForReject msg: #{msg[0].inspect}" if $debug
         case msg[0]
         when "REJECT"
           next_authenticator

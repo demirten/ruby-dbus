@@ -9,10 +9,10 @@
 # See the file "COPYING" for the exact licensing terms.
 require 'rubygems'
 require 'rofl' #http://github.com/pangdudu/rofl/tree/master makes the debug/tracing easy
-
 require 'dbus/type'
 require 'dbus/introspect'
 require 'dbus/export'
+require 'dbus/connection'
 require 'dbus/bus'
 require 'dbus/marshall'
 require 'dbus/message'
