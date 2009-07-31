@@ -12,7 +12,6 @@ require 'rofl' #http://github.com/pangdudu/rofl/tree/master makes the debug/trac
 require 'dbus/type'
 require 'dbus/introspect'
 require 'dbus/export'
-require 'dbus/connection'
 require 'dbus/bus'
 require 'dbus/marshall'
 require 'dbus/message'
