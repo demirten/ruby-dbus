@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{ruby-dbus}
-  s.version = "0.2.4.2"
+  s.version = "0.2.4.3"
 
   s.specification_version = 2 if s.respond_to? :specification_version=
 
@@ -24,4 +24,5 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.1}
   s.add_dependency(%q<pangdudu-rofl>, [">= 0"])
+  s.add_dependency(%q<hpricot>, [">= 0"])
 end

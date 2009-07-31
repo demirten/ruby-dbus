@@ -9,6 +9,7 @@
 # See the file "COPYING" for the exact licensing terms.
 require 'rubygems'
 require 'rofl' #http://github.com/pangdudu/rofl/tree/master makes the debug/tracing easy
+require 'hpricot' #hope this will speed stuff up a little
 require 'dbus/type'
 require 'dbus/introspect'
 require 'dbus/export'

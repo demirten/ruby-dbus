@@ -9,6 +9,7 @@ p# dbus/introspection.rb - module containing a low-level D-Bus introspection imp
 # See the file "COPYING" for the exact licensing terms.
 
 require 'rexml/document'
+require 'hpricot'
 
 module DBus
   # Regular expressions that should match all method names.
@@ -199,21 +200,58 @@ module DBus
     # Creates a new parser for XML data in string _xml_.
     def initialize(xml)
       @xml = xml
+      @hpricot = true
     end
 
     # Recursively parses the subnodes, constructing the tree.
     def parse_subnodes
       subnodes = Array.new
       t = Time.now
-      d = REXML::Document.new(@xml)
-      d.elements.each("node/node") do |e|
-        subnodes << e.attributes["name"]
+      if @hpricot
+        d = Hpricot.XML(@xml)
+        (d/"node/node").each { |e| subnodes << e.attributes['name'] }
+        return subnodes
       end
-      subnodes
+      unless @hpricot
+        d = REXML::Document.new(@xml)
+        d.elements.each("node/node") do |e|
+          subnodes << e.attributes["name"]
+        end
+        return subnodes
+      end
     end
-
-    # Parses the XML, constructing the tree.
+    
+    #make it easy to switch
     def parse
+      parse_rexml unless @hpricot
+      parse_hpricot if @hpricot      
+    end
+    
+    # Parses the XML, constructing the tree, using hpricot
+    def parse_hpricot
+      ret = Array.new
+      subnodes = Array.new
+      d = Hpricot.XML(@xml)
+      (d/"node/node").each { |e| subnodes << e.attributes['name'] }
+      (d/"node/interface").each do |e|
+        i = Interface.new(e.attributes['name'])
+        (e/"method").each do |me|
+          m = Method.new(me.attributes['name'])
+          parse_methsig_hpricot(me, m)
+          i << m
+        end
+        (e/"signal").each do |se|
+          s = Signal.new(se.attributes['name'])
+          parse_methsig_hpricot(se, s)
+          i << s
+        end
+        ret << i
+      end
+      [ret, subnodes]
+    end
+    
+    # Parses the XML, constructing the tree, using rexml
+    def parse_rexml
       ret = Array.new
       subnodes = Array.new
       t = Time.now
@@ -225,12 +263,12 @@ module DBus
         i = Interface.new(e.attributes["name"])
         e.elements.each("method") do |me|
           m = Method.new(me.attributes["name"])
-          parse_methsig(me, m)
+          parse_methsig_rexml(me, m)
           i << m
         end
         e.elements.each("signal") do |se|
           s = Signal.new(se.attributes["name"])
-          parse_methsig(se, s)
+          parse_methsig_rexml(se, s)
           i << s
         end
         ret << i
@@ -247,7 +285,29 @@ module DBus
 
     # Parses a method signature XML element _e_ and initialises
     # method/signal _m_.
-    def parse_methsig(e, m)
+    def parse_methsig_hpricot(e, m)
+      (e/"arg").each do |ae|
+        name = ae.attributes['name']
+        dir = ae.attributes['direction']
+        sig = ae.attributes['type']
+	      if m.is_a?(DBus::Signal)
+          m.add_param([name, sig])
+	      elsif m.is_a?(DBus::Method)
+          case dir
+          when "in"
+            m.add_param([name, sig])
+          when "out"
+	          m.add_return([name, sig])
+	        end
+        else
+          raise NotImplementedError, dir
+        end
+      end
+    end
+
+    # Parses a method signature XML element _e_ and initialises
+    # method/signal _m_.
+    def parse_methsig_rexml(e, m)
       e.elements.each("arg") do |ae|
         name = ae.attributes["name"]
         dir = ae.attributes["direction"]

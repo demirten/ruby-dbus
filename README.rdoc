@@ -3,22 +3,16 @@
 Ruby D-Bus provides an implementation of the D-Bus protocol such that the
 D-Bus system can be used in the Ruby programming language.
 
+You can switch between REXML and Hpricot as XML parsers!
+
+Still a little bumpy with multiple threads, but getting there.
+
 
 This is my personal dev-fork of mvidners upstream.
 
 If you'd like to contrib to this fork, let me know.
 
-
-
 Most of my work here is actually for another project: http://github.com/pangdudu/robots/tree/master
-
-I might also start writing a less ugly version of: http://github.com/pangdudu/ruby-dbus-daemon/tree/master 
-
-If you know of a nice custom-dbus-daemon let me know. Still thinking about writing
-a dbus spec compliant server/daemon implementation in (pure) Ruby, so that I can
-play around with the network and authentification more easily.
-
-Oki, will clean up a little now. :)
 
 Peace.
 
