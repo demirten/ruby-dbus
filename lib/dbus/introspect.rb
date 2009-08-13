@@ -200,7 +200,7 @@ module DBus
     # Creates a new parser for XML data in string _xml_.
     def initialize(xml)
       @xml = xml
-      @hpricot = true
+      @hpricot = false
     end
 
     # Recursively parses the subnodes, constructing the tree.
@@ -223,8 +223,9 @@ module DBus
     
     #make it easy to switch
     def parse
-      parse_rexml unless @hpricot
-      parse_hpricot if @hpricot      
+      ret = parse_rexml unless @hpricot
+      ret = parse_hpricot if @hpricot
+      return ret      
     end
     
     # Parses the XML, constructing the tree, using hpricot

@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{ruby-dbus}
-  s.version = "0.2.4.3"
+  s.version = "0.2.4.4"
 
   s.specification_version = 2 if s.respond_to? :specification_version=
 
