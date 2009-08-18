@@ -40,7 +40,7 @@ Ruby D-Bus currently supports the following features:
    allows for introspection.
  * Emitting signals on exported objects.
  
- * Connection to a local or remote bus over TCP/IP
+ * Connection to a local or remote bus over TCP/IP using 'Dbus::RemoteBus.new(socket_name)'
  * Authentification mechanisms working now: External,CookieSHA1
 
 == Usage

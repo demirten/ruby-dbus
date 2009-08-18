@@ -7,6 +7,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License, version 2.1 as published by the Free Software Foundation.
 # See the file "COPYING" for the exact licensing terms.
+
 require 'socket'
 require 'thread'
 require 'singleton'
@@ -77,7 +78,7 @@ module DBus
         n = n[elem]
       end
       if n.nil?
-        wlog "Unknown object #{path.inspect}"
+        puts "Warning, unknown object #{path}" if $DEBUG
       end
       n
     end
@@ -123,9 +124,10 @@ module DBus
 
     # Return an XML string representation of the node.
     def to_xml
-      xml = '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
-      <node>'
-
+      xml = '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+'
       self.each_pair do |k, v|
         xml += "<node name=\"#{k}\" />"
       end
@@ -138,7 +140,7 @@ module DBus
         end
       end
       xml += '</node>'
-      return xml
+      xml
     end
 
     # Return inspect information of the node.
@@ -176,7 +178,6 @@ module DBus
     # "transport1:key1=value1,key2=value2;transport2:key1=value1,key2=value2"
     # e.g. "unix:path=/tmp/dbus-test" or "tcp:host=localhost,port=2687"
     def initialize(path)
-      dlog "path: #{path}"
       @path = path
       @unique_name = nil
       @buffer = ""
@@ -205,19 +206,18 @@ module DBus
           port = para.sub("port=","").to_i if para.include? "port="
           family = para.sub("family=","") if para.include? "family="
         end
-        #dlog "host,port,family : #{host},#{port},#{family}"      
         begin
           #initialize the tcp socket
           @socket = TCPSocket.new(host,port)
           init_connection
           @is_tcp = true
         rescue
-          elog "Could not establish connection to: #{@path}, will now exit."
+          puts "Error: Could not establish connection to: #{@path}, will now exit."
           exit(0) #a little harsh
         end
       else
         #Danger, Will Robinson: the specified "path" is not usable
-        elog "supplied path: #{@path}, unusable! sorry."
+        puts "Error: supplied path: #{@path}, unusable! sorry."
       end
     end
 
@@ -454,7 +454,7 @@ module DBus
         begin
           @buffer += @socket.read_nonblock(MSG_BUF_SIZE)  
         rescue
-          wlog ".read_nonblock failed, falling back to .recv"
+          puts "WARNING: read_nonblock failed, falling back to .recv"
           @buffer += @socket.recv(MSG_BUF_SIZE)  
         end
       end
@@ -499,7 +499,7 @@ module DBus
     # Wait for a message to arrive. Return it once it is available.
     def wait_for_message
       if @socket.nil?
-        elog "Can't wait for messages, @socket is nil."
+        puts "ERROR: Can't wait for messages, @socket is nil."
         return
       end
       ret = pop_message
@@ -539,7 +539,6 @@ module DBus
     def on_return(m, &retc)
       # Have a better exception here
       if m.message_type != Message::METHOD_CALL
-        elog "Funky exception, occured."
         raise "on_return should only get method_calls"
       end
       @method_call_msgs[m.serial] = m
@@ -562,7 +561,7 @@ module DBus
         raise InvalidPacketException if m.reply_serial == nil
         mcs = @method_call_replies[m.reply_serial]
         if not mcs
-          dlog "no return code for mcs: #{mcs.inspect} m: #{m.inspect}"
+          puts "DEBUG: no return code for mcs: #{mcs.inspect} m: #{m.inspect}"
         else
           if m.message_type == Message::ERROR
             mcs.call(Error.new(m))
@@ -574,7 +573,7 @@ module DBus
         end
       when DBus::Message::METHOD_CALL
         if m.path == "/org/freedesktop/DBus"
-          dlog "Got method call on /org/freedesktop/DBus"
+          puts "DEBUG: Got method call on /org/freedesktop/DBus"
         end
         # handle introspectable as an exception:
         if m.interface == "org.freedesktop.DBus.Introspectable" and
@@ -602,7 +601,7 @@ module DBus
           end
         end
       else
-        dlog "Unknown message type: #{m.message_type}"
+        puts "DEBUG: Unknown message type: #{m.message_type}"
       end
     end
 
@@ -642,7 +641,6 @@ module DBus
       m.member = "Hello"
       send_sync(m) do |rmsg|
         @unique_name = rmsg.destination
-        dlog "Got hello reply. Our unique_name is #{@unique_name}, i feel special."
       end
     end
 
@@ -653,16 +651,17 @@ module DBus
     end
   end # class Connection
 
+
   # = D-Bus session bus class
   #
   # The session bus is a session specific bus (mostly for desktop use).
   # This is a singleton class.
   class SessionBus < Connection
     include Singleton
-    
+
     # Get the the default session bus.
-    def initialize socket_name=SessionSocketName
-      super(socket_name)
+    def initialize
+      super(ENV["DBUS_SESSION_BUS_ADDRESS"])
       connect
       send_hello
     end
@@ -676,13 +675,13 @@ module DBus
     include Singleton
 
     # Get the default system bus.
-    def initialize socket_name=SystemSocketName
-      super(socket_name)
+    def initialize
+      super(SystemSocketName)
       connect
       send_hello
     end
   end
-
+  
   # = D-Bus remote (TCP) bus class
   #
   # This class may be used when connecting to remote (listening on a TCP socket) 
@@ -704,8 +703,7 @@ module DBus
     end
   end
 
-
-  # FIXME: we should get rid of these singeltons
+  # FIXME: we should get rid of these
 
   def DBus.system_bus
     SystemBus.instance
