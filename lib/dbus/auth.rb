@@ -6,7 +6,7 @@
 # License, version 2.1 as published by the Free Software Foundation.
 # See the file "COPYING" for the exact licensing terms.
 
-$debug = false #it's all over the state machine
+$debug = true #it's all over the state machine
 
 module DBus
  
@@ -60,6 +60,7 @@ module DBus
     def data(hexdata)
       require 'digest/sha1'
       data = hex_decode(hexdata)
+      dlog "context, id, s_challenge: #{data.inspect}"
       # name of cookie file, id of cookie in file, servers random challenge  
       context, id, s_challenge = data.split(' ')
       # Random client challenge        
@@ -74,6 +75,7 @@ module DBus
           dlog "cookie: #{cookie.inspect}" if $debug
           # Concatenate and encrypt
           to_encrypt = [s_challenge, c_challenge, cookie].join(':')
+          dlog "s_challenge, c_challenge, cookie: #{to_encrypt.inspect}"
           sha = Digest::SHA1.hexdigest(to_encrypt)
           #the almighty tcp server wants everything hex encoded
           hex_response = hex_encode("#{c_challenge} #{sha}")
@@ -133,6 +135,7 @@ module DBus
     # server.
     def send(meth, *args)
       o = ([meth] + args).join(" ")
+      dlog "#{o.inspect}"
       @socket.write(o + "\r\n")
     end
 
