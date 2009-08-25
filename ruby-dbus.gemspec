@@ -1,16 +1,16 @@
 Gem::Specification.new do |s|
   s.name = %q{ruby-dbus}
-  s.version = "0.2.4.5"
+  s.version = "0.2.4.5.1"
 
   s.specification_version = 2 if s.respond_to? :specification_version=
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = "Ruby DBUS Team, pangdudu"
-  s.email = "pangdudu@github"
-  s.homepage = "http://github.com/pangdudu/ruby-dbus/tree/master"
+  s.authors = "Ruby DBUS Team, pangdudu, demirten"
+  s.email = "demirten@github"
+  s.homepage = "http://github.com/demirten/ruby-dbus/tree/master"
   s.platform = Gem::Platform::RUBY
-  s.date = %q{2009-08-19}
-  s.description = %q{Ruby module for interaction with dbus, panda dev fork.}
+  s.date = %q{2009-08-25}
+  s.description = %q{Ruby module for interaction with dbus, pangdudu dev fork.}
   s.summary = %q{Ruby module for interaction with dbus.}
   s.files = ["COPYING", "README.rdoc", "lib/dbus", "lib/dbus/message.rb", 
     "lib/dbus/auth.rb", "lib/dbus/marshall.rb", "lib/dbus/export.rb", 
