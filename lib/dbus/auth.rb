@@ -48,7 +48,7 @@ module DBus
       require 'etc'
       #number of retries we have for auth
       @retries = 1
-      return "#{hex_encode(Etc.getlogin)}" #server expects it to be binary
+	return "#{hex_encode(Etc.getpwuid(Process.uid).name)}" #server expects it to be binary
     end
 
     #returns the modules name
