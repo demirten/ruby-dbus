@@ -10,6 +10,7 @@
 require 'socket'
 require 'thread'
 require 'singleton'
+require 'timeout'
 
 # = D-Bus main module
 #
@@ -208,12 +209,17 @@ module DBus
         #dlog "host,port,family : #{host},#{port},#{family}"      
         begin
           #initialize the tcp socket
-          @socket = TCPSocket.new(host,port)
+	  begin
+	    Timeout.timeout(4) do
+              @socket = TCPSocket.new(host,port)
+	    end
+          rescue Timeout::Error
+	    raise "Connection timeout"
+	  end
           init_connection
           @is_tcp = true
         rescue
           elog "Could not establish connection to: #{@path}, will now exit."
-          exit(0) #a little harsh
         end
       else
         #Danger, Will Robinson: the specified "path" is not usable
